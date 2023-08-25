@@ -32,17 +32,20 @@ class Tree
     pretty_print(node.left, "#{prefix}#{is_left ? '    ' : '│   '}", true) if node.left
   end
 
-  def insert(value,curr = @head)
+  def insert(value)
     node = Node.new(value)
-    return node if curr.nil?
-    if value == curr.value
-      puts "Value Already Exists"
-      return nil
-    elsif value < curr.value
-      curr.left = insert(value,curr.left)
-    elsif value > curr.value
-      curr.right = insert(value,curr.right)
+    insert_node(@root, node)
+  end
+
+  def insert_node(node,element)
+    if node.nil?
+      node = element
+    elsif node.data > element.data
+      node.left = insert_node(node.left,element)
+    else
+      node.right = insert_node(node.right,element)
     end
+    node
   end
 
   def height(curr = @root)
@@ -57,16 +60,51 @@ class Tree
     end
   end
 
-  
+  def find(value)
+    node = Node.new(value)
+    find_node(@root,node)
+  end
 
-  def delete(node, value)
-    node if node.nil?
-    if node.data > value
-      node.left = delete(node.left,value)
-      node
-    elsif node.data < value
-      node.right = delete(node.right,value)
+  def find_node(node,element)
+    if node.nil?
+      return nil
+    elsif node.data == element.data
+      return node
+    elsif node.data < element.data
+      find_node(node.right,element)
+    else
+      find_node(node.left,element)
     end
+  end
+
+  def delete(value, node = self.root)
+    delete_node(value, node = self.root)
+    node
+end
+
+  def delete_node(value, node = @root)
+    if node == nil
+      return nil
+    end
+    if node.data > value
+        node.left = delete_node(value, node.left)
+    elsif node.data < value
+        node.right = delete_node(value, node.right)
+    else
+        if node.left != nil && node.right != nil
+            temp = node
+            min_of_right_subtree = find_min(node.right)
+            node.data = min_of_right_subtree.value
+            node.right = delete_node(min_of_right_subtree.value, node.right)
+        elsif node.left != nil
+            node = node.left
+        elsif node.right != nil
+            node = node.right
+        else
+            node = nil
+        end
+    end
+    return node
   end
 
   def inorder(node = @root, &block)
@@ -86,7 +124,7 @@ class Tree
   end
 
   def balanced?(node = @root)
-    return height(node.left) == height(node.right)
+    return (height(node.left) - height(node.right)).abs <= 1
   end
 
   def postorder(node = @root, &block)
@@ -97,22 +135,71 @@ class Tree
     yield node
   end
 
-  def level_order(node = @root, &block)
-    return nil if node.nil?
 
+  def level_order(node = @root,&block)
     queue = []
-    queue << node
-    until queue.empty?
-      node = queue.shift(1)
-      queue.flatten
+    queue.push node
+    while !queue.empty? do 
+      node = queue.shift
       yield node
-      queue << node.left unless node.left.nil?
-      queue << node.right unless node.right.nil?
+      unless node.left.nil?
+        queue.push node.left
+      end
+      unless node.right.nil?
+        queue.push node.right
+      end
     end
+  end
+
+  def depth(value)
+    node = Node.new(value)
+    curr = root
+    count = 0 
+    until curr.nil? || (node.data == curr.data)
+      count += 1
+      if value < curr.data
+        curr = curr.left
+      else
+        curr = curr.right
+      end
+    end
+    count
+  end
+
+  def rebalance
+    arr = []
+    level_order{|i| arr.push i.data}
+    @root = build_tree(arr.sort,0,arr.length-1)
   end
 end
 
 
-t1 = Tree.new [1]
-t1.insert 1
+t1 = Tree.new Array.new(15) { rand(1..100) }
+
 t1.pretty_print
+
+puts t1.balanced?
+
+puts (t1.level_order {|i| print i.data.to_s + ' '})
+puts t1.preorder{|i| print i.data.to_s + ' '}
+puts t1.postorder{|i| print i.data.to_s + ' '}
+puts t1.inorder{|i| print i.data.to_s + ' '}
+
+t1.insert(112)
+t1.insert(115)
+t1.insert(101)
+
+t1.pretty_print
+
+puts t1.balanced?
+
+t1.rebalance
+
+t1.pretty_print
+
+puts t1.balanced?
+
+puts t1.level_order{|i| print "#{i.data} "}
+puts t1.preorder{|i| print "#{i.data} "}
+puts t1.postorder{|i| print "#{i.data} "}
+puts t1.inorder{|i| print "#{i.data} "}
